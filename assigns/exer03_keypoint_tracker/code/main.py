@@ -87,20 +87,34 @@ def create_keypoint_desp(img, locs, d=144):
     return np.asarray(desp)
 
 
-def match_desp(trains, queries, lbda=10):
+def match_desp(_trains, queries, lbda=10):
     """
     """
-    trains = trains.astype('float')
-    op, dists = [-1] * len(queries), [np.NaN] * len(queries)
+    trains = np.copy(_trains).astype('float')
+    op = np.zeros(len(queries)).astype('int16')
+    dists = np.ones(len(queries)) * np.NaN
+    qry_idcs = np.arange(0, len(queries))
     for idx, qry in enumerate(queries):
-        dist = np.sum((trains - qry)**2, axis=1)
-        op[idx] = np.nanargmin(dist)
-        dists[idx] = dist[op[idx]]
-        trains[op[idx]] = np.asarray([np.NaN] * trains.shape[1])
-    min_dist = min(dists)
-    op = [x[0] if (x[1] <= lbda * min_dist and min_dist != np.NaN) else -1
-          for x in zip(op, dists)]
-    return op
+        tmp = np.sqrt(np.sum((trains - qry)**2, axis=1))
+        min_idx = np.nanargmin(tmp)
+        dists[idx] = tmp[min_idx]
+        op[idx] = min_idx
+    min_dist = max(50, np.min(dists))
+    print("Min dist: {} & counts: {}".format(min_dist, len(dists)))
+    tidx = dists < (lbda * min_dist)
+    dists = dists[tidx]
+    op = op[tidx]
+    qry_idcs = qry_idcs[tidx]
+    uniqs, ucnts = np.unique(op, return_counts=True)
+    dups = uniqs[ucnts > 1]
+    for dup in dups:
+        reps = np.where(op==dup)[0]
+        midx = np.argmin(dists[reps])
+        reps = np.delete(reps, midx)
+        for rep in reps:
+            op[rep] = -1
+    filt_idcs = op > -1
+    return qry_idcs[filt_idcs].tolist(), op[filt_idcs].tolist()
 
 
 def draw_keypoints(img, points, color=(0, 0, 255)):
@@ -113,16 +127,15 @@ def draw_matching_points(img, matches, train_locs, query_locs):
     """
     Draw matching keypoints between training and query images
     """
-    for idx, desp in enumerate(matches):
-        if desp != -1:
-            try:
-                p2 = query_locs[idx]
-                p1 = train_locs[desp]
-                img = cv2.circle(img, (p1[1], p1[0]), 2, (0, 0, 255), 2)
-                img = cv2.circle(img, (p2[1], p2[0]), 2, (0, 255, 0), 2)
-                img = cv2.line(img, (p1[1], p1[0]), (p2[1], p2[0]), (255, 0, 0))
-            except:
-                import ipdb; ipdb.set_trace()
+    for qry, trn in zip(matches[0], matches[1]):
+        try:
+            p2 = query_locs[qry]
+            p1 = train_locs[trn]
+            img = cv2.circle(img, (p1[1], p1[0]), 2, (0, 0, 255), 2)
+            img = cv2.circle(img, (p2[1], p2[0]), 2, (0, 255, 0), 2)
+            img = cv2.line(img, (p1[1], p1[0]), (p2[1], p2[0]), (255, 0, 0))
+        except:
+            import ipdb; ipdb.set_trace()
     return img
 
 
@@ -142,8 +155,9 @@ train_locs = non_maxima_suppression(haris, no_of_points=no_of_points)
 train_desp = create_keypoint_desp(img, train_locs)
 prev_img = img
 cv2.namedWindow('t', 0)
-cv2.namedWindow('train', 0)
-cv2.namedWindow('query', 0)
+#cv2.namedWindow('train', 0)
+#cv2.namedWindow('query', 0)
+wrtr = cv2.VideoWriter("output.avi", cv2.VideoWriter_fourcc('M','J','P','G'), 2, (1241, 376))
 
 for idx in range(1, 200):
     img = cv2.imread(img_path_fmt.format(str(idx).zfill(6)), 0)
@@ -155,17 +169,18 @@ for idx in range(1, 200):
     haris = calc_harris_scores(l1, l2)
 
     query_locs = non_maxima_suppression(haris, no_of_points=no_of_points)
-    query_desp = create_keypoint_desp(img, train_locs)
+    query_desp = create_keypoint_desp(img, query_locs)
 
-    matches = match_desp(train_desp, query_desp)
+    matches = match_desp(train_desp, query_desp, lbda=5.0)
     if matches:
         op_img = draw_matching_points(cv2.cvtColor(img, cv2.COLOR_GRAY2RGB), matches, train_locs, query_locs)
         cv2.imshow('t', op_img)
-        cv2.imshow('train', draw_keypoints(cv2.cvtColor(prev_img, cv2.COLOR_GRAY2RGB), train_locs))
-        cv2.imshow('query', draw_keypoints(cv2.cvtColor(img, cv2.COLOR_GRAY2RGB), query_locs))
-        key = cv2.waitKey(0)
+        #cv2.imshow('train', draw_keypoints(cv2.cvtColor(prev_img, cv2.COLOR_GRAY2RGB), train_locs))
+        #cv2.imshow('query', draw_keypoints(cv2.cvtColor(img, cv2.COLOR_GRAY2RGB), query_locs))
+        key = cv2.waitKey(10)
         if key == 27:
             break
-    train_locs = query_locs
-    train_desp = query_desp
+    wrtr.write(op_img)
+    train_locs = list(query_locs)
+    train_desp = np.asarray(query_desp)
     prev_img = img
