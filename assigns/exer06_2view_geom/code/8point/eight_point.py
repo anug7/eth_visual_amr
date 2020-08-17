@@ -19,3 +19,22 @@ def compute_fmatrix(p1, p2):
     sdiag[2, 2] = 0
     pmat1 = u1.dot(sdiag.dot(v1))
     return pmat1
+
+def compute_dist2epilines(F, p1, p2):
+    """
+    Computes distance to epipolar lines from points
+    to assess quality of F
+    @param: p1[3xN] points in img1 in homogeneous coordinates
+    @param: p2[3xN] points in img2 in homogeneous coordinates
+    @param: F[3xx] fundamental matrix
+    """
+    l1 = F.T.dot(p2.T).T
+    l2 = F.dot(p1.T).T
+    cost = 0.0
+    for n in range(p1.shape[0]):
+        denom1 = l1[n]**2 + l2[n]**2
+        op = ((l1[n].dot(p1[n]))**2 + (l2[n].dot(p2[n]))**2) / denom1
+        cost += np.sum(op/denom1)
+    return np.sqrt(cost / p1.shape[0])
+
+
