@@ -17,7 +17,7 @@ def apply_conv(array, filter_array):
     strides = pad_array.strides + pad_array.strides
 
     sub_matrices = np.lib.stride_tricks.as_strided(pad_array, sub_matrices_shape, strides)
-    
+
     m = np.einsum('ij, klij->kl', filter_array, sub_matrices)
 
     return m
@@ -31,10 +31,10 @@ def calc_cornerness(Ix, Iy, k=0.04):
                        [0.0625, 0.125, 0.0625]])
     Ix2 = (Ix**2)
     Iy2 = (Iy**2)
-    
+
     sIx2 = apply_conv(Ix2, kern)
     sIy2 = apply_conv(Iy2, kern)
-    
+
     Ixy = (Ix * Iy)
     sIxy = apply_conv(Ixy, kern)
     sIxy2 = sIxy ** 2
@@ -42,7 +42,7 @@ def calc_cornerness(Ix, Iy, k=0.04):
     first, second = sIx2 + sIy2, np.sqrt(4*sIxy2 + (sIx2-sIy2)**2)
     l1 = 0.5 * (first + second)
     l2 = 0.5 * (first - second)
-    
+
     return (l1, l2)
 
 
