@@ -24,7 +24,7 @@ def triangulate_linear(p1, p2, M1, M2):
         op1 = pp1.dot(M1)
         op2 = pp2.dot(M2)
         amat = np.vstack((op1, op2))
-        u, s, v = np.linalg.svd(amat.T.dot(amat))
+        u, s, v = np.linalg.svd(amat)
         min_vec = v[-1, :]
         min_vec /= min_vec[3]
         points.append(min_vec.tolist())
