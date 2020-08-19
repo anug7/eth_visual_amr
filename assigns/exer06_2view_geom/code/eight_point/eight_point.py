@@ -13,7 +13,7 @@ def compute_fmatrix(p1, p2):
         qmat.append(np.kron(p1[n], p2[n]))
     qmat = np.asarray(qmat)
     u, s, v = np.linalg.svd(qmat)
-    pmat = v[-1, :].reshape((3, 3))
+    pmat = v[-1].reshape((3, 3))
     u1, s1, v1 = np.linalg.svd(pmat)
     sdiag = np.diag(s1)
     sdiag[2, 2] = 0
