@@ -8,10 +8,10 @@ import conversion as conv
 def getIndividualCorners(ips, n=12):
   """
   """
-  points = [] 
+  points = []
   for i in range(n):
     points.append(np.asarray([ips[i*2], ips[i*2+1], 1]))
-  return np.asarray(points) 
+  return np.asarray(points)
 
 
 def getNormalizedPoints(points, kmat):
@@ -57,7 +57,7 @@ def decomposeRTMatrix(augmat):
   rnew = np.matmul(u, v)
   val = np.linalg.det(rnew)
   if not (np.allclose(1.0, val) or np.allclose(np.eye(3), np.matmul(rnew.T, rnew))):
-    print "Rot matrix error.{}".format(val)
+    print("Rot matrix error.{}").format(val)
   scale = np.linalg.norm(rnew) / np.linalg.norm(r)
   # remove scale from R matrix .ie what we have found is alpha * R
   rnew, t = rnew, t * scale
@@ -75,7 +75,7 @@ def estimatePoseDLT(p, P, kmat):
 
 
 def projectPoints_mat(kmat, trans, coords):
-  """ 
+  """
   """
   tmp = np.matmul(kmat, trans)
   tmp = np.matmul(tmp, coords.T).T

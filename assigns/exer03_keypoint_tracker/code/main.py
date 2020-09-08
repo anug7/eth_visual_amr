@@ -139,7 +139,7 @@ def draw_matching_points(img, matches, train_locs, query_locs):
     return img
 
 
-no_of_points = 100
+no_of_points = 500
 
 img_path_fmt = '../data/{}.png'
 img = cv2.imread(img_path_fmt.format(str(0).zfill(6)), 0)
