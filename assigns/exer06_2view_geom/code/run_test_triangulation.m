@@ -2,7 +2,7 @@ clear all % clear all variables in the workspace
 close all % close all figures
 clc       % clear the command window
 
-addpath('8point/');
+addpath('eight_point/');
 addpath('triangulation/');
 addpath('plot/');
 

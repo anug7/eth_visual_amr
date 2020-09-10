@@ -1,4 +1,4 @@
-function M = cross2Matrix(x)
+function M = skew_mat(x)
 % CROSS2MATRIX  Antisymmetric matrix corresponding to a 3-vector
 %
 % Computes the antisymmetric matrix M corresponding to a 3-vector x such

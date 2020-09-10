@@ -72,10 +72,10 @@ def decompose_essential_matrix(_E):
                   [1,  0, 0],
                   [0,  0, 1]])
   r1 = (u.dot(w)).dot(v)
-  if np.linalg.det(r1) < 0:
+  if np.linalg.det(r1) != 1.0:
     r1 *= -1
   r2 = (u.dot(w.T)).dot(v)
-  if np.linalg.det(r2) < 0:
+  if np.linalg.det(r2) != 1.0:
     r2 *= -1
   return [r1, r2], t
 

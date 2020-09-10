@@ -59,8 +59,8 @@ def non_maxima_suppression(scores, no_of_points=40, w=3):
   locs, shape = [], scores.shape
   for i in range(no_of_points):
     x, y = np.where(scores == np.amax(scores))
-    x_start, x_end = max(0, x[0] - w), min(shape[0], x[0] + w)
-    y_start, y_end = max(0, y[0] - w), min(shape[1], y[0] + w)
+    x_start, x_end = max(0, x[0] - w), min(shape[0], x[0] + w + 1)
+    y_start, y_end = max(0, y[0] - w), min(shape[1], y[0] + w + 1)
     size = (x_end - x_start, y_end - y_start)
     try:
       scores[x_start: x_end, y_start: y_end] = np.zeros(size)
@@ -77,22 +77,21 @@ def create_keypoint_desp(img, locs, d=144):
   shape = img.shape
   desp, w = [], int(np.sqrt(d) / 2.)
   for l in locs:
-    x_start, x_end = max(0, int(l[0]) - w), min(shape[0], int(l[0]) + w)
-    y_start, y_end = max(0, int(l[1]) - w), min(shape[1], int(l[1]) + w)
+    x_start, x_end = max(0, int(l[0]) - w), min(shape[0], int(l[0]) + w + 1)
+    y_start, y_end = max(0, int(l[1]) - w), min(shape[1], int(l[1]) + w + 1)
     op = img[x_start: x_end, y_start: y_end].flatten()
-    if op.shape[0] < d:
-      op = np.append(op, np.asarray([0] * (d - op.shape[0])))
+    if op.shape[0] < (2*w + 1) ** 2:
+      op = np.append(op, np.asarray([0] * ((2*w + 1)**2 - op.shape[0])))
       if op.shape[0] < d:
         import ipdb; ipdb.set_trace()
-    desp.append(op)
+    desp.append(op.tolist())
   return np.asarray(desp)
 
 
 def match_desp(_trains, queries, lbda=10):
   """
   """
-  import ipdb; ipdb.set_trace()
-  trains = np.copy(_trains).astype('float')
+  trains = np.copy(_trains)
   op = np.zeros(len(queries)).astype('int16')
   dists = np.ones(len(queries)) * np.NaN
   qry_idcs = np.arange(0, len(queries))
@@ -116,12 +115,12 @@ def match_desp(_trains, queries, lbda=10):
     for rep in reps:
       op[rep] = -1
   filt_idcs = op > -1
-  return qry_idcs[filt_idcs].tolist(), op[filt_idcs].tolist()
+  return qry_idcs[filt_idcs].tolist(), op[filt_idcs].tolist() 
 
 
 def draw_keypoints(img, points, color=(0, 0, 255)):
   for p in points:
-    img = cv2.circle(img,  (p[1], p[0]), 2, color, 2)
+    img = cv2.circle(img,  (int(p[1]), int(p[0])), 2, color, 2)
   return img
 
 
@@ -151,7 +150,7 @@ def harris(qimg, corner_patch_size, kappa):
   Ix = apply_conv(qimg, dx)
   Iy = apply_conv(qimg, dy)
 
-  l1, l2 = calc_cornerness(Ix, Iy, patch_size=(corner_patch_size * 2))
+  l1, l2 = calc_cornerness(Ix, Iy, patch_size=(corner_patch_size + 1))
   harris_scores = calc_harris_scores(l1, l2, k=kappa)
 
   return harris_scores
@@ -171,7 +170,7 @@ def describe_keypoints(qimg, kps, dsp_rad):
   """
   Describes keypoint from image intensity values
   """
-  desp = create_keypoint_desp(qimg, kps, d=(dsp_rad * 2)**2)
+  desp = create_keypoint_desp(qimg, kps, d=(dsp_rad**2))
   return desp
 
 def match_descriptors(query, train, match_lambda):
@@ -207,8 +206,8 @@ if __name__ == "__main__":
   for idx in range(1, 200):
     img = cv2.imread(img_path_fmt.format(str(idx).zfill(6)), 0)
   
-    haris = harris(img, 9, 0.04)
-  
+    haris = harris(img, 8, 0.04)
+ 
     query_locs = select_keypoints(haris, no_of_kps=no_of_points, nmx_radius=8)
     query_desp = create_keypoint_desp(img, query_locs)
   

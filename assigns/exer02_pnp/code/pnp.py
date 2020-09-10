@@ -41,7 +41,7 @@ def computeMMatrixFromQ(q_mat):
   # each row corresponds to Eigen vector of q_mat.T * q_mat
   # Get eigen values corresponding to lowest eigen values
   # which is last row in v
-  min_vec = v[-1, :]
+  min_vec = v[-1, :].T
   if min_vec[-1] < 0:
     min_vec = -1 * min_vec
   min_vec = min_vec.reshape((3, 4))
