@@ -41,7 +41,7 @@ def computeMMatrixFromQ(q_mat):
   # each row corresponds to Eigen vector of q_mat.T * q_mat
   # Get eigen values corresponding to lowest eigen values
   # which is last row in v
-  min_vec = v[-1, :].T
+  min_vec = v[-1, :]
   if min_vec[-1] < 0:
     min_vec = -1 * min_vec
   min_vec = min_vec.reshape((3, 4))
@@ -68,7 +68,7 @@ def estimatePoseDLT(p, P, kmat):
   """
   """
   p_dash = getNormalizedPoints(p, kmat)
-  qmat = buildQMatrix(p_dash, P)
+  qmat = buildQMatrix(p_dash, P, n=p.shape[0])
   m = computeMMatrixFromQ(qmat)
   M = decomposeRTMatrix(m)
   return M
@@ -79,7 +79,7 @@ def projectPoints_mat(kmat, trans, coords):
   """
   tmp = np.matmul(kmat, trans)
   tmp = np.matmul(tmp, coords.T).T
-  tmp = tmp / tmp[:, -1].reshape((12, 1))
+  tmp = tmp / tmp[:, -1].reshape((coords.shape[0], 1))
   return tmp.astype('int64')[:, :-1]
 
 
@@ -95,21 +95,21 @@ def drawCorners(oc, rc, img, n=12):
       pass
   return img
 
+if __name__ == "__main__":
+  img_path = "../data/images_undistorted/img_{}.jpg"
+  n = 12
+  kmat = np.loadtxt("../data/K.txt")
+  obj_points = np.loadtxt("../data/p_W_corners.txt", delimiter=",")
+  img_points = np.loadtxt("../data/detected_corners.txt")
+  P = np.hstack((obj_points, np.ones((n, 1))))
+  cv2.namedWindow("op", 0)
 
-img_path = "../data/images_undistorted/img_{}.jpg"
-n = 12
-kmat = np.loadtxt("../data/K.txt")
-obj_points = np.loadtxt("../data/p_W_corners.txt", delimiter=",")
-img_points = np.loadtxt("../data/detected_corners.txt")
-P = np.hstack((obj_points, np.ones((n, 1))))
-cv2.namedWindow("op", 0)
+  for idx, indv_img_points in enumerate(img_points):
+    img = cv2.imread(img_path.format(str(idx+1).zfill(4)))
+    p = getIndividualCorners(indv_img_points)
+    M = estimatePoseDLT(p, P, kmat)
+    rep_p = projectPoints_mat(kmat, M, P)
+    img = drawCorners(p.astype('int64'), rep_p, img)
 
-for idx, indv_img_points in enumerate(img_points):
-  img = cv2.imread(img_path.format(str(idx+1).zfill(4)))
-  p = getIndividualCorners(indv_img_points)
-  M = estimatePoseDLT(p, P, kmat)
-  rep_p = projectPoints_mat(kmat, M, P)
-  img = drawCorners(p.astype('int64'), rep_p, img)
-
-  cv2.imshow("op", img)
-  cv2.waitKey(30)
+    cv2.imshow("op", img)
+    cv2.waitKey(30)

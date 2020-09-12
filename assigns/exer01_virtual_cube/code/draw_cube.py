@@ -109,34 +109,34 @@ def projectPointsWithDist(kmat, aug, dcoef, points):
   return np.asarray(op_coords).astype('uint64')[:, :-1]
 
 
-
-poses = np.loadtxt("data/poses.txt")
-kmat = np.loadtxt("data/K.txt")
-dist = np.loadtxt("data/D.txt")
-
-cv2.namedWindow("cube", 0)
-
-for idx, pose in enumerate(poses):
-
-  aug = poseVectorToTransformationMatrix(pose)
-  cube_coords = getCubeCoordsWorld(0.04, (0.08, 0.08))
-  #points = projectPoints_mat(kmat, aug, cube_coords)
+if __name__ == "__main__":
+  poses = np.loadtxt("data/poses.txt")
+  kmat = np.loadtxt("data/K.txt")
+  dist = np.loadtxt("data/D.txt")
   
-  points_dist = projectPointsWithDist(kmat, aug, dist, cube_coords)
-  #corners = getCorners()
-  # corners = np.asarray([[0, 0, 0, 1], [0.04, 0, 0, 1]])
-  #trans_corners = projectPoints(kmat, aug, corners)
+  cv2.namedWindow("cube", 0)
   
-  # img = cv2.imread("data/images_undistorted/img_0001.jpg")
-  img = cv2.imread("data/images/img_{}.jpg".format(str(idx+1).zfill(4)))
- 
-  if not isinstance(img, np.ndarray):
-    print "Invalid image"
-    continue
-
-  img = drawCube(img, points_dist)
-  #for trans_cor in trans_corners:
-  #  img = cv2.circle(img, tuple(trans_cor), 2, (0, 0, 255), 2)
+  for idx, pose in enumerate(poses):
   
-  cv2.imshow("cube", img)
-  cv2.waitKey(30)
+    aug = poseVectorToTransformationMatrix(pose)
+    cube_coords = getCubeCoordsWorld(0.04, (0.08, 0.08))
+    #points = projectPoints_mat(kmat, aug, cube_coords)
+    
+    points_dist = projectPointsWithDist(kmat, aug, dist, cube_coords)
+    #corners = getCorners()
+    # corners = np.asarray([[0, 0, 0, 1], [0.04, 0, 0, 1]])
+    #trans_corners = projectPoints(kmat, aug, corners)
+    
+    # img = cv2.imread("data/images_undistorted/img_0001.jpg")
+    img = cv2.imread("data/images/img_{}.jpg".format(str(idx+1).zfill(4)))
+   
+    if not isinstance(img, np.ndarray):
+      print("Invalid image")
+      continue
+  
+    img = drawCube(img, points_dist)
+    #for trans_cor in trans_corners:
+    #  img = cv2.circle(img, tuple(trans_cor), 2, (0, 0, 255), 2)
+    
+    cv2.imshow("cube", img)
+    cv2.waitKey(30)

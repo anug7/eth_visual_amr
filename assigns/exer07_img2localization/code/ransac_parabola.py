@@ -35,30 +35,31 @@ def ransac_polynomial(X, Y, max_noise, no_of_points=3, iters=200):
   ncoefs = np.polyfit(inx, iny, 2)
   return ncoefs
 
-num_inliers = 20
-num_outliers = 10
-noise_ratio = 0.1
-poly = rand(3)  # random second-order polynomial
-extremum = -poly[1]/(2*poly[0])
-xstart = extremum - 0.5
-lowest = polyval(poly, extremum)
-highest = polyval(poly, xstart)
-xspan = 1
-yspan = highest - lowest
-max_noise = noise_ratio * yspan
-x = rand(num_inliers) + xstart
-y = polyval(poly, x)
-y = y + (rand(y.shape[0])-.5) * 2 * max_noise
-
-x_outlier = rand(num_outliers) + xstart
-y_outlier = rand(num_outliers) * yspan + lowest
-
-X = np.hstack((x, x_outlier))
-Y = np.hstack((y, y_outlier))
-
-plt.scatter(X, Y, marker="+")
-ncoefs = ransac_polynomial(X, Y, max_noise)
-plt.plot(np.sort(x), np.polyval(ncoefs, np.sort(x)))
-plt.show()
-
-print("op")
+if __name__ == "__main__":
+  num_inliers = 20
+  num_outliers = 10
+  noise_ratio = 0.1
+  poly = rand(3)  # random second-order polynomial
+  extremum = -poly[1]/(2*poly[0])
+  xstart = extremum - 0.5
+  lowest = polyval(poly, extremum)
+  highest = polyval(poly, xstart)
+  xspan = 1
+  yspan = highest - lowest
+  max_noise = noise_ratio * yspan
+  x = rand(num_inliers) + xstart
+  y = polyval(poly, x)
+  y = y + (rand(y.shape[0])-.5) * 2 * max_noise
+  
+  x_outlier = rand(num_outliers) + xstart
+  y_outlier = rand(num_outliers) * yspan + lowest
+  
+  X = np.hstack((x, x_outlier))
+  Y = np.hstack((y, y_outlier))
+  
+  plt.scatter(X, Y, marker="+")
+  ncoefs = ransac_polynomial(X, Y, max_noise)
+  plt.plot(np.sort(x), np.polyval(ncoefs, np.sort(x)))
+  plt.show()
+  
+  print("op")
