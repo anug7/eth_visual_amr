@@ -80,7 +80,7 @@ def projectPoints_mat(kmat, trans, coords):
   tmp = np.matmul(kmat, trans)
   tmp = np.matmul(tmp, coords.T).T
   tmp = tmp / tmp[:, -1].reshape((coords.shape[0], 1))
-  return tmp.astype('int64')[:, :-1]
+  return tmp[:, :-1]
 
 
 def drawCorners(oc, rc, img, n=12):

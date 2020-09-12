@@ -29,7 +29,7 @@ def projectPoints_mat(kmat, trans, coords):
   trans_coords = coords.dot(tmp.T)
   scales = trans_coords[:, -1].reshape((coords.shape[0], -1))
   norm_coords = trans_coords / scales
-  return norm_coords.astype('uint64')[:, :-1]
+  return norm_coords[:, :-1]
 
 
 def projectPoints(kmat, trans, coords):
@@ -39,7 +39,7 @@ def projectPoints(kmat, trans, coords):
   for coord in coords:
     tmp = np.dot(trans, coord.reshape((4, 1)))
     pnt = np.dot(kmat, tmp)
-    pnt = (pnt / pnt[2]).astype("uint64").reshape((3, ))
+    pnt = (pnt / pnt[2]).reshape((3, ))
     points.append(pnt[:2])
 
   return points
@@ -48,6 +48,7 @@ def projectPoints(kmat, trans, coords):
 def drawCube(img, coords):
   """
   """
+  coords = coords.astype('int')
   img = cv2.line(img, tuple(coords[0]), tuple(coords[1]), (0, 0, 255), 2)
   img = cv2.line(img, tuple(coords[1]), tuple(coords[2]), (0, 0, 255), 2)
   img = cv2.line(img, tuple(coords[2]), tuple(coords[3]), (0, 0, 255), 2)
@@ -106,7 +107,7 @@ def projectPointsWithDist(kmat, aug, dcoef, points):
     cam_coord = kmat.dot(hc_coord)
     cam_coord = cam_coord / cam_coord[2]
     op_coords.append(cam_coord)
-  return np.asarray(op_coords).astype('uint64')[:, :-1]
+  return np.asarray(op_coords)[:, :-1]
 
 
 if __name__ == "__main__":
