@@ -1,6 +1,9 @@
 import sys
 
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 import cv2
 
 sys.path.insert(0, "../../exer01_virtual_cube/code")
@@ -17,9 +20,9 @@ harris_patch_size = 9
 harris_kappa = 0.08
 non_maxima_supp_radius = 8
 descriptor_radius = 9
-match_lambda = 10
+match_lambda = 5
 
-no_of_keypoints = 1200
+no_of_keypoints = 1000
 
 kmat = np.loadtxt("../data/K.txt")
 db_keypoints = np.loadtxt("../data/keypoints.txt")
@@ -32,8 +35,11 @@ p_w_landmarks_h = np.hstack((p_w_landmarks, np.ones((p_w_landmarks.shape[0], 1))
 dimg = cv2.imread("../data/000000.png", 0)
 ddesp = tk.describe_keypoints(dimg, db_keypoints[:, [1, 0]], (descriptor_radius * 2))
 
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(p_w_landmarks[:, 0], p_w_landmarks[:, 1], p_w_landmarks[:, 2], c='b', marker='^')
 
-for iidx in range(1, 9):
+for iidx in range(0, 9):
   
   qimg = cv2.imread("../data/00000{}.png".format(iidx), 0)
   
@@ -55,7 +61,7 @@ for iidx in range(1, 9):
                                    qkps[:, [1, 0]])
   cv2.imshow("t", op_img)
   
-  def ransace_dlt(dbkps, dbObj, kmat, msample=6):
+  def ransace_dlt(dbkps, dbObj, kmat, msample=7):
     """
     Ransac for DLT to remove outliers
     """
@@ -84,11 +90,17 @@ for iidx in range(1, 9):
         op_idcs = test_idcs[proj_err <= 250]
         aug = pnp.estimatePoseDLT(ipts, wpts, kmat)
         min_count = _sum
-    if min_count > 6:
+    is_suc = True
+    if min_count > 8:
       aug = pnp.estimatePoseDLT(ipts, wpts, kmat)
-    return aug, op_idcs
+    else:
+      is_suc = False
+      print("Not enough points")
+    return aug, op_idcs, is_suc
   
-  aug, idcs = ransace_dlt(qkps_h[mat_query], p_w_landmarks_h[mat_train], kmat)
+  aug, idcs, is_suc = ransace_dlt(qkps_h[mat_query], p_w_landmarks_h[mat_train], kmat)
+  if not is_suc:
+    continue
   op_img = tk.draw_matching_points(cv2.cvtColor(qimg, cv2.COLOR_GRAY2BGR),
                                    [[mat_query[i] for i in idcs], [mat_train[i] for i in idcs]],
                                    db_keypoints[:, [1, 0]],
@@ -96,5 +108,14 @@ for iidx in range(1, 9):
   
   print("Rot: {}".format(aug[:3, :3]))
   print("Trans: {}".format(aug[:, 3:]))
+  t = aug[:, 3:]
+  ax.scatter(t[0], t[1], t[2], c='r', marker="o")
   cv2.imshow("op", op_img)
-  cv2.waitKey(0)
+  key = cv2.waitKey(10)
+  if key == 27:
+    break
+
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+plt.show()

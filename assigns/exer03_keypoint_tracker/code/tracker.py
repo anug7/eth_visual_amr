@@ -1,91 +1,66 @@
 import numpy as np
-
 import cv2
 
-
-def apply_conv(array, filter_array):
-  """
-  Applies 2D conv
-  @oaram: array: input image
-  @param: filter_array: conv filter array
-  """
-  pad_size = filter_array.shape[0] - 2
-  pad_array = np.pad(array, (pad_size,), "constant", constant_values=(0))
-  sub_mat_size = filter_array.shape
-
-  sub_matrices_shape = tuple(np.subtract(pad_array.shape, sub_mat_size) + 1) + sub_mat_size
-  strides = pad_array.strides + pad_array.strides
-
-  sub_matrices = np.lib.stride_tricks.as_strided(pad_array, sub_matrices_shape, strides)
-
-  m = np.einsum('ij, klij->kl', filter_array, sub_matrices)
-
-  return m
+from scipy.signal import convolve2d
 
 
 def calc_cornerness(Ix, Iy, patch_size=9):
   """
   """
-  # kern = np.asarray([[0.0625, 0.125, 0.0625],
-  #                    [0.125,  0.25,  0.125],
-  #                    [0.0625, 0.125, 0.0625]])
-  kern = np.ones((patch_size, patch_size)).astype('float')
+  kern = np.ones((patch_size, patch_size)).astype('float') / (patch_size ** 2)
   Ix2 = (Ix**2)
   Iy2 = (Iy**2)
-
-  sIx2 = apply_conv(Ix2, kern)
-  sIy2 = apply_conv(Iy2, kern)
-
   Ixy = (Ix * Iy)
-  sIxy = apply_conv(Ixy, kern)
+
+  sIx2 = convolve2d(Ix2, kern, "valid")
+  sIy2 = convolve2d(Iy2, kern, "valid")
+
+  sIxy = convolve2d(Ixy, kern, "valid")
   sIxy2 = sIxy ** 2
 
-  first, second = sIx2 + sIy2, np.sqrt(4*sIxy2 + (sIx2-sIy2)**2)
-  l1 = 0.5 * (first + second)
-  l2 = 0.5 * (first - second)
-
-  return (l1, l2)
+  det_muv = sIx2 * sIy2 - sIxy2
+  trace2muv = (sIx2 + sIy2)**2
+  return (det_muv, trace2muv)
 
 
-def calc_harris_scores(l1, l2, k=0.04):
-  return l1 * l2 - (k * (l1+ l2)**2)
+def calc_harris_scores(l1, l2, patch_size=9, k=0.04):
+  scores = l1 - k * l2
+  scores[scores < 0] = 0
+  pad_width = int((patch_size + 1) / 2)
+  scores = np.pad(scores, (pad_width, pad_width), mode="constant",
+                  constant_values=(0, 0))
+  return scores
 
 
 def calc_tomashi_score(l1, l2):
   return np.min(l1, l2)
 
 
-def non_maxima_suppression(scores, no_of_points=40, w=3):
-  locs, shape = [], scores.shape
+def non_maxima_suppression(scores, no_of_points=40, r=9):
+  locs = np.zeros((no_of_points, 2)).astype('int')
+  tscores = np.pad(scores, (r, r), mode="constant", constant_values=(0, 0))
   for i in range(no_of_points):
-    x, y = np.where(scores == np.amax(scores))
-    x_start, x_end = max(0, x[0] - w), min(shape[0], x[0] + w + 1)
-    y_start, y_end = max(0, y[0] - w), min(shape[1], y[0] + w + 1)
-    size = (x_end - x_start, y_end - y_start)
-    try:
-      scores[x_start: x_end, y_start: y_end] = np.zeros(size)
-    except:
-      import ipdb; ipdb.set_trace()
-    locs.append((x[0], y[0]))
+    kp = np.unravel_index(tscores.argmax(), tscores.shape)
+    # Subtract offset added by padding
+    l = (np.array([kp[0], kp[1]]) - r).astype('int')
+    locs[i, :] = l
+    tscores[kp[0] - r:kp[0] + r + 1, kp[1] - r:kp[1] + r + 1] = 0.
   return locs
 
 
-def create_keypoint_desp(img, locs, d=144):
+def create_keypoint_desp(img, locs, r=9):
   """
   Create keypoint description based in image intensity values
   """
-  shape = img.shape
-  desp, w = [], int(np.sqrt(d) / 2.)
-  for l in locs:
-    x_start, x_end = max(0, int(l[0]) - w), min(shape[0], int(l[0]) + w + 1)
-    y_start, y_end = max(0, int(l[1]) - w), min(shape[1], int(l[1]) + w + 1)
-    op = img[x_start: x_end, y_start: y_end].flatten()
-    if op.shape[0] < (2*w + 1) ** 2:
-      op = np.append(op, np.asarray([0] * ((2*w + 1)**2 - op.shape[0])))
-      if op.shape[0] < d:
-        import ipdb; ipdb.set_trace()
-    desp.append(op.tolist())
-  return np.asarray(desp)
+  timg = np.pad(img, (r, r), mode="constant", constant_values=(0, 0))
+  desp = np.zeros((locs.shape[0], (2 * r + 1)**2)) 
+  for i, l in enumerate(locs):
+    l[0], l[1] = l[0] + r, l[1] + r
+    x_start, x_end = int(l[0]) - r, int(l[0]) + r + 1
+    y_start, y_end = int(l[1]) - r, int(l[1]) + r + 1
+    op = timg[x_start: x_end, y_start: y_end].flatten()
+    desp[i, :] = op
+  return desp
 
 
 def match_desp(_trains, queries, lbda=10):
@@ -147,12 +122,11 @@ def harris(qimg, corner_patch_size, kappa):
   """
   dx = np.asarray([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
   dy = dx.T
-  Ix = apply_conv(qimg, dx)
-  Iy = apply_conv(qimg, dy)
+  Ix = convolve2d(qimg, dx, "valid")
+  Iy = convolve2d(qimg, dy, "valid")
 
-  l1, l2 = calc_cornerness(Ix, Iy, patch_size=(corner_patch_size + 1))
-  harris_scores = calc_harris_scores(l1, l2, k=kappa)
-
+  l1, l2 = calc_cornerness(Ix, Iy, patch_size=corner_patch_size)
+  harris_scores = calc_harris_scores(l1, l2, corner_patch_size, k=kappa)
   return harris_scores
 
 
@@ -162,7 +136,7 @@ def select_keypoints(harris_scores, no_of_kps=1000, nmx_radius=8):
   """
   query_locs = non_maxima_suppression(harris_scores,
                                       no_of_points=no_of_kps,
-                                      w=nmx_radius)
+                                      r=nmx_radius)
   return query_locs
 
 
@@ -170,7 +144,7 @@ def describe_keypoints(qimg, kps, dsp_rad):
   """
   Describes keypoint from image intensity values
   """
-  desp = create_keypoint_desp(qimg, kps, d=(dsp_rad**2))
+  desp = create_keypoint_desp(qimg, kps, r=dsp_rad)
   return desp
 
 def match_descriptors(query, train, match_lambda):
@@ -190,8 +164,10 @@ if __name__ == "__main__":
   dx = np.asarray([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
   dy = dx.T
   
-  Ix = apply_conv(img, dx)
-  Iy = apply_conv(img, dy)
+  # Ix = apply_conv(img, dx)
+  # Iy = apply_conv(img, dy)
+  Ix = convolve2d(img, dx, mode="valid")
+  Iy = convolve2d(img, dy, mode="valid")
   
   l1, l2 = calc_cornerness(Ix, Iy)
   haris = calc_harris_scores(l1, l2)
