@@ -41,6 +41,7 @@ I = warpImage(I_R, W);
 r_D = 20;
 tic;
 [dx, ssds] = trackBruteForce(I_R, I, x_T, r_T, r_D);
+dx = dx - r_D - 1;
 toc
 imagesc(ssds);
 axis equal;

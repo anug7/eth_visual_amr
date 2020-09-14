@@ -4,3 +4,12 @@ function [dx, ssds] = trackBruteForce(I_R, I, x_T, r_T, r_D)
 % of patch to search dx within; dx: translation that best explains where
 % x_T is in image I, ssds: SSDs for all values of dx within the patch
 % defined by center x_T and radius r_D.
+template = I_R(x_T(2) - r_T:x_T(2) + r_T, x_T(1) - r_T:x_T(1) + r_T);
+ssds = zeros(2* r_D + 1, r_D*2 + 1);
+for i=-r_D:r_D
+    for j=-r_D:r_D
+        tmp = I(x_T(2) + j - r_T:x_T(2) + j + r_T, x_T(1) + i - r_T:x_T(1) + i + r_T);
+        ssds(i + r_D + 1, j + r_D + 1) = sum(sum((template - tmp).^2));
+    end
+end
+[M, dx] = minmat(ssds);
