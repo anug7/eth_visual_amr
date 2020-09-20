@@ -43,7 +43,7 @@ tic;
 [dx, ssds] = trackBruteForce(I_R, I, x_T, r_T, r_D);
 dx = dx - r_D - 1;
 toc
-imagesc(ssds);
+imagesc(ssds');
 axis equal;
 axis off;
 title('SSDs');
@@ -97,7 +97,7 @@ I_R = imread('../data/000000.png');
 I_R = imresize(I_R, 0.25);
 keypoints_rc = load('../data/keypoints.txt') / 4;
 keypoints = flipud(keypoints_rc(1:50, :)');
-figure(4);
+figure(5);
 imshow(I_R);
 hold on;
 plot(keypoints(1, :), keypoints(2, :), 'rx');

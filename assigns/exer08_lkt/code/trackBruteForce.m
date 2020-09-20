@@ -13,3 +13,8 @@ for i=-r_D:r_D
     end
 end
 [M, dx] = minmat(ssds);
+
+% Brute force with wrapped
+%W = getSimWarp(i, j, 0, 1);
+%patch = getWarpedPatch(I, W, x_T, r_T);
+%ssds(i + r_D +1, j + r_D + 1) = sum(sum((template-patch).^2));
