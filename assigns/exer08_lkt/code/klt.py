@@ -56,12 +56,6 @@ def get_warped_patch(img, warp, loc, patch_radius):
   return patch
 
 
-def get_warp_brute_force(img, timg, patch_radius, search_radius):
+def get_warped_patch_simple(img, warp, loc, patch_radius):
   """
-  Recover patch with simple brute force matching
-  @param: img[np.array]: input image
-  @param: timg[np.array]: image in which patch has to recovered
-  @param: patch_radius[int]: patch radius
-  @param: search_radius[int]: search length along x & y axes
-  @param: loc[[int, int]]: center of patch in input image
   """

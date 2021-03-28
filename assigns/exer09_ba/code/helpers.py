@@ -44,3 +44,28 @@ def twist_tot_homo_mat(twist):
   se_mat[0:3, 0:3] = cross2mat(w)
   se_mat[0:3, 3] = v
   return expm(se_mat)
+
+
+def crop_problem(hidden_state, observations, gt, num_frames):
+  """
+  Extract data from files into meaningful format
+  """
+  total_frames = int(observations[0])
+  assert num_frames < total_frames
+  obs_id = 2
+  for i in range(num_frames):
+    num_observations = int(observations[obs_id])
+    if i == num_frames - 1:
+      cropped_num_landmarks = max(observations[range(obs_id + 1 +
+              num_observations * 2, obs_id + num_observations * 3 + 1)])
+      cropped_num_landmarks = int(cropped_num_landmarks)
+    obs_id = obs_id + num_observations * 3 + 1
+  
+  cropped_hidden_state = np.hstack((hidden_state[: 6 * num_frames],
+                                    hidden_state[range(6 * total_frames, 6 *
+                                                 total_frames + 3 *
+                                                 cropped_num_landmarks)]))
+  cropped_observations = np.hstack(([num_frames], [cropped_num_landmarks],
+                                   observations[range(2, obs_id)]))
+  cropped_gt = gt[: num_frames]
+  return cropped_hidden_state, cropped_observations, cropped_gt

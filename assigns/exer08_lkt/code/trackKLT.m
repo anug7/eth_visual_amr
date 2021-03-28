@@ -28,7 +28,7 @@ for iter=1:num_iters
             idx = idx + 1;
         end
     end
-    temp_new = temp_new(2:end -1, 2:end-1); 
+    temp_new = temp_new(2:end - 1, 2:end - 1); 
     i_new = temp_new(:);
     H = op' * op;
     dW = H^-1  * op' * double(i_r - i_new);
