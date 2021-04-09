@@ -33,7 +33,7 @@ def homo_mat_to_twist(homo_mat):
   return np.hstack((w.T, v.T))
 
 
-def twist_tot_homo_mat(twist):
+def twist_to_homo_mat(twist):
   """
   Converts twist vector to transformation
   homogeneous matrix
